@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NFT Forge — Prompt Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0d0d14;
+    --surface2: #13131f;
+    --border: #1e1e35;
+    --accent: #00f5c4;
+    --accent2: #7b5ea7;
+    --accent3: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Rajdhani', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(123,94,167,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 80%, rgba(0,245,196,0.07) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,196,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,196,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.4rem;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  select, input[type=text] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  select:focus, input[type=text]:focus {
+    border-color: var(--accent);
+  }
+
+  select option { background: #0d0d14; }
+
+  .tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    background: var(--surface2);
+  }
+
+  .tag:hover { border-color: var(--accent); color: var(--accent); }
+
+  .tag.active {
+    background: rgba(0,245,196,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .gen-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+
+  .gen-btn:hover { background: #00ddb0; transform: translateY(-1px); }
+  .gen-btn:active { transform: translateY(0); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .output-section { display: none; }
+  .output-section.visible { display: block; }
+
+  .output-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .output-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .output-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+  .name-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .name-card .name { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .name-card .desc { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .loading-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .loading-bar.active { display: block; }
+
+  .loading-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: slide 1s ease-in-out infinite;
+  }
+
+  @keyframes slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .rarity-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .badge-common { background: rgba(107,107,138,0.2); color: var(--muted); border: 1px solid var(--muted); }
+  .badge-uncommon { background: rgba(0,245,196,0.1); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-rare { background: rgba(123,94,167,0.2); color: #a87fd6; border: 1px solid #7b5ea7; }
+  .badge-legendary { background: rgba(255,77,109,0.1); color: var(--accent3); border: 1px solid var(--accent3); }
+
+
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover { border-color: var(--accent); }
+  .upload-zone.has-image { border-color: var(--accent); border-style: solid; }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-label { font-size: 12px; font-family: var(--mono); color: var(--muted); }
+  .upload-preview { max-width: 100%; max-height: 180px; border-radius: 8px; margin-top: 10px; display: none; }
+  .mode-toggle { display: flex; gap: 0; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; border: none; cursor: pointer; background: transparent; color: var(--muted); transition: all 0.2s; }
+  .mode-btn.active { background: var(--accent); color: #000; font-weight: 700; }
+
+  footer {
+    text-align: center;
+    margin-top: 3rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+
+  <header>
+    <div class="logo">// nft forge v1.0</div>
+    <h1>NFT Prompt Generator</h1>
+    <div class="subtitle">build prompts. mint faster. stay degen.</div>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Core Parameters</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Style</label>
+        <select id="style">
+          <option>Cyberpunk</option>
+          <option>Anime</option>
+          <option>Pixel art</option>
+          <option>Abstract</option>
+          <option>Solarpunk</option>
+          <option>Dark fantasy</option>
+          <option>Vaporwave</option>
+          <option>Minimalist</option>
+          <option>Steampunk</option>
+          <option>Glitchcore</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input type="text" id="subject" placeholder="ape, robot, wizard..." value="ape"/>
+      </div>
+      <div class="field">
+        <label>Rarity</label>
+        <select id="rarity">
+          <option>Common</option>
+          <option>Uncommon</option>
+          <option>Rare</option>
+          <option>Legendary</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Background</label>
+        <select id="bg">
+          <option>Dark gradient</option>
+          <option>Neon city</option>
+          <option>Galaxy</option>
+          <option>Solid color</option>
+          <option>Abstract waves</option>
+          <option>Grid matrix</option>
+          <option>Apocalyptic wasteland</option>
+          <option>Underwater</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mood</label>
+        <select id="mood">
+          <option>Hyper-detailed</option>
+          <option>Dreamy</option>
+          <option>Aggressive</option>
+          <option>Peaceful</option>
+          <option>Glitchy</option>
+          <option>Cinematic</option>
+          <option>Lo-fi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Art engine</label>
+        <select id="engine">
+          <option>Midjourney</option>
+          <option>DALL-E 3</option>
+          <option>Stable Diffusion</option>
+          <option>Leonardo AI</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Traits</div>
+    <div class="tags-wrap" id="traits">
+      <span class="tag" onclick="this.classList.toggle('active')">Laser eyes</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Gold chain</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Crown</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Cyber implants</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Glitch effect</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Neon aura</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Diamond hands</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Space suit</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Degen hoodie</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Holographic bg</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Katana</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Gas mask</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Mechanical arm</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Tattoos</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Wings</span>
+    </div>
+  </div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeText" onclick="setMode('text')">✏ Describe manually</button>
+    <button class="mode-btn" id="modeImage" onclick="setMode('image')">📷 Upload reference image</button>
+  </div>
+
+  <div id="imageUploadCard" class="card" style="display:none; margin-bottom:1rem;">
+    <div class="card-title">Reference Image</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(this)"/>
+      <div class="upload-icon">🖼</div>
+      <div class="upload-label">Click to upload or drag & drop<br/>PNG, JPG, WEBP supported</div>
+      <img class="upload-preview" id="imagePreview"/>
+    </div>
+    <div style="font-size:11px; font-family:var(--mono); color:var(--muted); margin-top:10px;">
+      The AI will analyze your image and generate a new prompt with your chosen style, mood & background.
+    </div>
+  </div>
+
+  <div class="card" id="extraCard">
+    <div class="card-title">Extra Details</div>
+    <div class="field">
+      <label>Describe anything extra</label>
+      <input type="text" id="extra" placeholder="e.g. holding a stick, smoking a cigar, riding a motorcycle..."/>
+    </div>
+  </div>
+
+  <div class="card" style="display:none;">
+    <div class="card-title">Gemini API Key</div>
+    <div class="field">
+      <label>Paste your free key from aistudio.google.com</label>
+      <input type="text" id="apiKey" placeholder="AIza..." style="font-family: var(--mono); font-size:13px;"/>
+    </div>
+    <div style="font-size:11px; font-family:var(--mono); color:var(--muted); margin-top:8px;">
+      Free at aistudio.google.com → Get API Key → Create API Key. 1,500 requests/day free.
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generate()">⚡ Generate NFT Prompt</button>
+
+  <div class="loading-bar" id="loader"></div>
+  <div class="status" id="status"></div>
+
+  <div class="output-section" id="outputSection">
+
+    <div class="output-block">
+      <div class="output-label">Image Prompt — paste into your AI tool</div>
+      <button class="copy-btn" onclick="copyBlock('promptOut', this)">copy</button>
+      <div class="output-text" id="promptOut"></div>
+    </div>
+
+    <div class="output-block">
+      <div class="output-label">NFT Metadata JSON</div>
+      <button class="copy-btn" onclick="copyBlock('metaOut', this)">copy</button>
+      <div class="output-text" id="metaOut"></div>
+    </div>
+
+    <div class="card" style="margin-top:0;">
+      <div class="card-title">Collection Name Ideas</div>
+      <div class="names-grid" id="namesGrid"></div>
+    </div>
+
+  </div>
+
+  <footer>NFT Forge — built for Web3 hunters &amp; whitelist grinders</footer>
+</div>
+
+<script>
+let currentMode = 'text';
+let imageBase64 = null;
+let imageMimeType = null;
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeText').classList.toggle('active', mode === 'text');
+  document.getElementById('modeImage').classList.toggle('active', mode === 'image');
+  document.getElementById('imageUploadCard').style.display = mode === 'image' ? 'block' : 'none';
+  document.getElementById('extraCard').style.display = mode === 'text' ? 'block' : 'none';
+}
+
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  imageMimeType = file.type;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imageBase64 = e.target.result.split(',')[1];
+    const preview = document.getElementById('imagePreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('uploadZone').classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+
+function buildImagePrompt() {
+  const style = document.getElementById('style').value;
+  const rarity = document.getElementById('rarity').value;
+  const traits = getTraits();
+  const bg = document.getElementById('bg').value;
+  const mood = document.getElementById('mood').value;
+  const engine = document.getElementById('engine').value;
+  return `Analyze this image and generate NFT content based on what you see, but transformed with these new settings:
+- New Style: ${style}
+- Rarity: ${rarity}
+- Traits to add: ${traits}
+- New Background: ${bg}
+- Mood: ${mood}
+- Target AI engine: ${engine}
+
+Reply with ONLY these 3 sections:
+
+[PROMPT]
+A vivid 60-80 word image generation prompt for ${engine} that reimagines the subject from the uploaded image in ${style} style, with ${bg} background, ${mood} mood. Keep the core subject but transform the visual style completely.
+[/PROMPT]
+
+[METADATA]
+{"name":"${style} NFT #001","description":"A ${rarity.toLowerCase()} NFT reimagined in ${style.toLowerCase()} style.","attributes":[{"trait_type":"Style","value":"${style}"},{"trait_type":"Rarity","value":"${rarity}"},{"trait_type":"Background","value":"${bg}"},{"trait_type":"Mood","value":"${mood}"}],"rarity_score":30}
+[/METADATA]
+
+[NAMES]
+NAME1: (creative collection name inspired by the image) | DESC1: (one sentence vibe)
+NAME2: (creative collection name inspired by the image) | DESC2: (one sentence vibe)
+NAME3: (creative collection name inspired by the image) | DESC3: (one sentence vibe)
+[/NAMES]
+
+Important: Keep the [PROMPT], [/PROMPT], [METADATA], [/METADATA], [NAMES], [/NAMES] tags exactly as shown.`;
+}
+
+function getTraits() {
+  return [...document.querySelectorAll('.tag.active')].map(t => t.textContent.trim()).join(', ') || 'No special traits';
+}
+
+function buildPrompt() {
+  const style = document.getElementById('style').value;
+  const subject = document.getElementById('subject').value || 'character';
+  const rarity = document.getElementById('rarity').value;
+  const traits = getTraits();
+  const bg = document.getElementById('bg').value;
+  const mood = document.getElementById('mood').value;
+  const engine = document.getElementById('engine').value;
+  const extra = document.getElementById('extra').value;
+
+  return `Generate NFT content. Reply with ONLY these 3 sections, no extra text, no markdown formatting outside the tags.
+
+SECTION 1 - write exactly this line then the prompt:
+[PROMPT]
+A vivid 60-80 word image generation prompt for ${engine}. Style: ${style}. Subject: ${subject}. Rarity: ${rarity}. Traits: ${traits}. Background: ${bg}. Mood: ${mood}.${extra ? " " + extra + "." : ""} Make it cinematic, unique, and specific.
+[/PROMPT]
+
+SECTION 2 - write exactly this line then valid JSON:
+[METADATA]
+{"name":"${style} ${subject} #001","description":"A ${rarity.toLowerCase()} ${style.toLowerCase()} ${subject} NFT.","attributes":[{"trait_type":"Style","value":"${style}"},{"trait_type":"Rarity","value":"${rarity}"},{"trait_type":"Background","value":"${bg}"},{"trait_type":"Mood","value":"${mood}"}],"rarity_score":25}
+[/METADATA]
+
+SECTION 3 - write exactly this line then 3 names:
+[NAMES]
+NAME1: (invent a creative collection name) | DESC1: (one sentence vibe)
+NAME2: (invent a creative collection name) | DESC2: (one sentence vibe)
+NAME3: (invent a creative collection name) | DESC3: (one sentence vibe)
+[/NAMES]
+
+Important: Keep the [PROMPT], [/PROMPT], [METADATA], [/METADATA], [NAMES], [/NAMES] tags exactly as shown.`;
+}
+
+async function generate() {
+  const apiKey = "AIzaSyB8DiJyVyd9WIFG3Dz2AsvYoqx1pV9h20Q";
+  if (currentMode === 'image') { await generateFromImage(apiKey); return; }
+
+  const btn = document.getElementById('genBtn');
+  const loader = document.getElementById('loader');
+  const status = document.getElementById('status');
+  const output = document.getElementById('outputSection');
+
+  btn.disabled = true;
+  loader.classList.add('active');
+  status.textContent = '// forging your NFT...';
+  output.classList.remove('visible');
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: buildPrompt() }] }],
+          generationConfig: { maxOutputTokens: 1000, temperature: 0.9 }
+        })
+      }
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('Empty response from Gemini');
+    parseAndDisplay(text);
+    output.classList.add('visible');
+    status.textContent = '// done. copy your prompt and go mint.';
+  } catch (e) {
+    status.textContent = '// error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('active');
+  }
+}
+
+
+async function generateFromImage(apiKey) {
+  if (!imageBase64) { alert('Please upload an image first.'); return; }
+
+  const btn = document.getElementById('genBtn');
+  const loader = document.getElementById('loader');
+  const status = document.getElementById('status');
+  const output = document.getElementById('outputSection');
+
+  btn.disabled = true;
+  loader.classList.add('active');
+  status.textContent = '// analyzing your image...';
+  output.classList.remove('visible');
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: imageMimeType, data: imageBase64 } },
+              { text: buildImagePrompt() }
+            ]
+          }],
+          generationConfig: { maxOutputTokens: 1000, temperature: 0.9 }
+        })
+      }
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('Empty response');
+    parseAndDisplay(text);
+    output.classList.add('visible');
+    status.textContent = '// done. your reimagined NFT prompt is ready.';
+  } catch (e) {
+    status.textContent = '// error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('active');
+  }
+}
+
+function parseAndDisplay(text) {
+  // Flexible extractor — handles both [TAG] and **TAG** style
+  const extract = (tag, content) => {
+    const m = content.match(new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`));
+    return m ? m[1].trim() : '';
+  };
+
+  let prompt = extract('PROMPT', text);
+  let meta = extract('METADATA', text);
+  let namesRaw = extract('NAMES', text);
+
+  // Fallback: extract JSON block anywhere in text if METADATA tag missing
+  if (!meta) {
+    const jsonMatch = text.match(/```json([\s\S]*?)```/) || text.match(/(\{[\s\S]*?"attributes"[\s\S]*?\})/);
+    if (jsonMatch) meta = jsonMatch[1].trim();
+  }
+
+  // Fallback: if no [PROMPT] tag, grab first paragraph
+  if (!prompt) {
+    const lines = text.split('\n').filter(l => l.trim() && !l.includes('{') && !l.includes('NAME'));
+    prompt = lines.slice(0, 3).join(' ');
+  }
+
+  // Fallback: find collection names anywhere
+  if (!namesRaw) {
+    const nameLines = text.split('\n').filter(l => /name\d*[:\-]/i.test(l) || /collection/i.test(l));
+    namesRaw = nameLines.join('\n');
+  }
+
+  document.getElementById('promptOut').textContent = prompt || text.substring(0, 400);
+
+  // Parse metadata JSON
+  try {
+    const cleanMeta = meta.replace(/```json|```/g, '').trim();
+    document.getElementById('metaOut').textContent = JSON.stringify(JSON.parse(cleanMeta), null, 2);
+  } catch {
+    // Try to find any JSON object in full text
+    try {
+      const anyJson = text.match(/(\{[\s\S]*?\}(?:\s*\})*)/);
+      if (anyJson) {
+        document.getElementById('metaOut').textContent = JSON.stringify(JSON.parse(anyJson[1]), null, 2);
+      } else {
+        document.getElementById('metaOut').textContent = meta || 'No metadata returned.';
+      }
+    } catch {
+      document.getElementById('metaOut').textContent = meta || 'No metadata returned.';
+    }
+  }
+
+  // Parse collection names
+  const namesGrid = document.getElementById('namesGrid');
+  namesGrid.innerHTML = '';
+  const lines = text.split('\n');
+  let found = 0;
+  lines.forEach(line => {
+    if (found >= 3) return;
+    // Match: NAME1: Foo | DESC1: bar  OR  **Foo** - bar  OR  1. Foo: bar
+    const pipe = line.match(/NAME\d*[:\.]?\s*([^|\n]+)\|\s*DESC\d*[:\.]?\s*(.+)/i);
+    const bold = line.match(/\*\*([^*]+)\*\*[:\-–]?\s*(.+)/);
+    const numbered = line.match(/^\d+\.\s+([^:\n]+)[:\-–]\s*(.+)/);
+    const m = pipe || bold || numbered;
+    if (m && m[1].trim().length > 1) {
+      namesGrid.innerHTML += `<div class="name-card"><div class="name">${m[1].trim()}</div><div class="desc">${m[2].trim()}</div></div>`;
+      found++;
+    }
+  });
+
+  if (found === 0) {
+    namesGrid.innerHTML = '<div style="color:var(--muted);font-size:13px;font-family:var(--mono);">Scroll up — names may be in the prompt output.</div>';
+  }
+}
+
+function copyBlock(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
