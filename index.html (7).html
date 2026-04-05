@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NFT Forge — Prompt Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0d0d14;
+    --surface2: #13131f;
+    --border: #1e1e35;
+    --accent: #00f5c4;
+    --accent2: #7b5ea7;
+    --accent3: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Rajdhani', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(123,94,167,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 80%, rgba(0,245,196,0.07) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,196,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,196,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.4rem;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  select, input[type=text] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  select:focus, input[type=text]:focus {
+    border-color: var(--accent);
+  }
+
+  select option { background: #0d0d14; }
+
+  .tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    background: var(--surface2);
+  }
+
+  .tag:hover { border-color: var(--accent); color: var(--accent); }
+
+  .tag.active {
+    background: rgba(0,245,196,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .gen-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+
+  .gen-btn:hover { background: #00ddb0; transform: translateY(-1px); }
+  .gen-btn:active { transform: translateY(0); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .output-section { display: none; }
+  .output-section.visible { display: block; }
+
+  .output-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .output-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .output-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+  .name-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .name-card .name { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .name-card .desc { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .loading-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .loading-bar.active { display: block; }
+
+  .loading-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: slide 1s ease-in-out infinite;
+  }
+
+  @keyframes slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .rarity-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .badge-common { background: rgba(107,107,138,0.2); color: var(--muted); border: 1px solid var(--muted); }
+  .badge-uncommon { background: rgba(0,245,196,0.1); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-rare { background: rgba(123,94,167,0.2); color: #a87fd6; border: 1px solid #7b5ea7; }
+  .badge-legendary { background: rgba(255,77,109,0.1); color: var(--accent3); border: 1px solid var(--accent3); }
+
+  footer {
+    text-align: center;
+    margin-top: 3rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+
+  <header>
+    <div class="logo">// nft forge v1.0</div>
+    <h1>NFT Prompt Generator</h1>
+    <div class="subtitle">build prompts. mint faster. stay degen.</div>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Core Parameters</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Style</label>
+        <select id="style">
+          <option>Cyberpunk</option>
+          <option>Anime</option>
+          <option>Pixel art</option>
+          <option>Abstract</option>
+          <option>Solarpunk</option>
+          <option>Dark fantasy</option>
+          <option>Vaporwave</option>
+          <option>Minimalist</option>
+          <option>Steampunk</option>
+          <option>Glitchcore</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input type="text" id="subject" placeholder="ape, robot, wizard..." value="ape"/>
+      </div>
+      <div class="field">
+        <label>Rarity</label>
+        <select id="rarity">
+          <option>Common</option>
+          <option>Uncommon</option>
+          <option>Rare</option>
+          <option>Legendary</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Background</label>
+        <select id="bg">
+          <option>Dark gradient</option>
+          <option>Neon city</option>
+          <option>Galaxy</option>
+          <option>Solid color</option>
+          <option>Abstract waves</option>
+          <option>Grid matrix</option>
+          <option>Apocalyptic wasteland</option>
+          <option>Underwater</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mood</label>
+        <select id="mood">
+          <option>Hyper-detailed</option>
+          <option>Dreamy</option>
+          <option>Aggressive</option>
+          <option>Peaceful</option>
+          <option>Glitchy</option>
+          <option>Cinematic</option>
+          <option>Lo-fi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Art engine</label>
+        <select id="engine">
+          <option>Midjourney</option>
+          <option>DALL-E 3</option>
+          <option>Stable Diffusion</option>
+          <option>Leonardo AI</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Traits</div>
+    <div class="tags-wrap" id="traits">
+      <span class="tag" onclick="this.classList.toggle('active')">Laser eyes</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Gold chain</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Crown</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Cyber implants</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Glitch effect</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Neon aura</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Diamond hands</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Space suit</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Degen hoodie</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Holographic bg</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Katana</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Gas mask</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Mechanical arm</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Tattoos</span>
+      <span class="tag" onclick="this.classList.toggle('active')">Wings</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Extra Details</div>
+    <div class="field">
+      <label>Describe anything extra</label>
+      <input type="text" id="extra" placeholder="e.g. holding a stick, smoking a cigar, riding a motorcycle..."/>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generate()">⚡ Generate NFT Prompt</button>
+
+  <div class="loading-bar" id="loader"></div>
+  <div class="status" id="status"></div>
+
+  <div class="output-section" id="outputSection">
+
+    <div class="output-block">
+      <div class="output-label">Image Prompt — paste into your AI tool</div>
+      <button class="copy-btn" onclick="copyBlock('promptOut', this)">copy</button>
+      <div class="output-text" id="promptOut"></div>
+    </div>
+
+    <div class="output-block">
+      <div class="output-label">NFT Metadata JSON</div>
+      <button class="copy-btn" onclick="copyBlock('metaOut', this)">copy</button>
+      <div class="output-text" id="metaOut"></div>
+    </div>
+
+    <div class="card" style="margin-top:0;">
+      <div class="card-title">Collection Name Ideas</div>
+      <div class="names-grid" id="namesGrid"></div>
+    </div>
+
+  </div>
+
+  <footer>NFT Forge — built for Web3 hunters &amp; whitelist grinders</footer>
+</div>
+
+<script>
+const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
+
+const rarityColors = {
+  'Common': 'badge-common',
+  'Uncommon': 'badge-uncommon',
+  'Rare': 'badge-rare',
+  'Legendary': 'badge-legendary'
+};
+
+function getTraits() {
+  return [...document.querySelectorAll('.tag.active')].map(t => t.textContent.trim()).join(', ') || 'No special traits';
+}
+
+function buildPrompt() {
+  const style = document.getElementById('style').value;
+  const subject = document.getElementById('subject').value || 'character';
+  const rarity = document.getElementById('rarity').value;
+  const traits = getTraits();
+  const bg = document.getElementById('bg').value;
+  const mood = document.getElementById('mood').value;
+  const engine = document.getElementById('engine').value;
+  const extra = document.getElementById('extra').value;
+
+  return `You are an expert NFT collection designer and prompt engineer. Generate NFT content for:
+- Style: ${style}
+- Subject: ${subject}
+- Rarity: ${rarity}
+- Traits: ${traits}
+- Background: ${bg}
+- Mood: ${mood}
+- Target AI engine: ${engine}
+${extra ? '- Extra details: ' + extra : ''}
+
+Return your response in this EXACT format with these exact markers:
+
+[PROMPT]
+(Write a vivid, specific image generation prompt optimized for ${engine}. 60-80 words. No generic phrases. Make it cinematic and unique.)
+[/PROMPT]
+
+[METADATA]
+(Write valid JSON only. Include: name, description, attributes array with trait_type/value pairs for all traits, and rarity_score 0-100.)
+[/METADATA]
+
+[NAMES]
+NAME1: (collection name) | DESC1: (one line vibe description)
+NAME2: (collection name) | DESC2: (one line vibe description)
+NAME3: (collection name) | DESC3: (one line vibe description)
+[/NAMES]`;
+}
+
+async function generate() {
+  const btn = document.getElementById('genBtn');
+  const loader = document.getElementById('loader');
+  const status = document.getElementById('status');
+  const output = document.getElementById('outputSection');
+
+  btn.disabled = true;
+  loader.classList.add('active');
+  status.textContent = '// forging your NFT...';
+  output.classList.remove('visible');
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: buildPrompt() }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error.message);
+
+    const text = data.content?.map(c => c.text || '').join('') || '';
+    parseAndDisplay(text);
+    output.classList.add('visible');
+    status.textContent = '// done. copy your prompt and go mint.';
+
+  } catch (e) {
+    status.textContent = '// error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('active');
+  }
+}
+
+function parseAndDisplay(text) {
+  const extract = (tag, content) => {
+    const m = content.match(new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`));
+    return m ? m[1].trim() : '';
+  };
+
+  const prompt = extract('PROMPT', text);
+  const meta = extract('METADATA', text);
+  const namesRaw = extract('NAMES', text);
+
+  document.getElementById('promptOut').textContent = prompt || 'Could not parse prompt.';
+
+  try {
+    const cleanMeta = meta.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleanMeta);
+    document.getElementById('metaOut').textContent = JSON.stringify(parsed, null, 2);
+  } catch {
+    document.getElementById('metaOut').textContent = meta || 'Could not parse metadata.';
+  }
+
+  const namesGrid = document.getElementById('namesGrid');
+  namesGrid.innerHTML = '';
+  if (namesRaw) {
+    namesRaw.split('\n').filter(l => l.trim()).forEach(line => {
+      const nameMatch = line.match(/NAME\d+:\s*(.+?)\s*\|/);
+      const descMatch = line.match(/DESC\d+:\s*(.+)/);
+      if (nameMatch && descMatch) {
+        namesGrid.innerHTML += `
+          <div class="name-card">
+            <div class="name">${nameMatch[1].trim()}</div>
+            <div class="desc">${descMatch[1].trim()}</div>
+          </div>`;
+      }
+    });
+  }
+}
+
+function copyBlock(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
